@@ -1,0 +1,119 @@
+# Based on anaconda-ks.cfg
+# Revised by Ningning Li <liningning@nosa.com>
+# version=RHEL7
+
+
+# System bootloader configuration
+bootloader --location=mbr
+
+
+# Clear the Master Boot Record
+zerombr
+
+
+# Partition clearing information
+clearpart --all
+
+
+# Use text mode install
+text
+
+
+# Firewall configuration
+firewall --disabled
+
+
+# System keyboard
+keyboard --vckeymap=us --xlayouts='us'
+
+
+# System language
+lang en_US.UTF-8
+
+
+# Installation logging level
+logging --level=info
+
+
+# Install OS instead of upgrade
+install
+
+
+# Network information
+#network --bootproto=static
+
+
+# System authorization information
+auth --enableshadow --passalgo=sha512
+
+
+# Root password
+#rootpw --iscrypted $6$iXpox8zjsr1gcD0K$JW5TAqnxCnRugGRfwZ7o/IG8ySGb7AVcxoktY73cr7grqQ4eORcZzeWNe2WsjNb0ridKwztc2RF/zC7PaJtgP.
+rootpw --plaintext nosa.com 
+
+
+# SELinux configuration
+selinux --disabled
+
+
+# Do not configure the X Window System
+skipx
+
+
+# System timezone
+timezone Asia/Shanghai --utc
+
+
+# Continue to install if unsupported hardware
+unsupported_hardware
+
+
+# Temporary accounts through which to log on during installation
+sshpw --username=nosa nosa.com --plaintext
+
+
+#reboot after installation
+reboot
+
+
+# Configuring services
+services --disabled auditd,cups,smartd,nfslock,postfix,NetworkManager,avahi-daemon
+services --enabled sshd,network,crond,irqbalance,ipmi,sendmail,lvm2-lvmetad
+
+
+# Packages
+%packages 
+@core
+
+bash-completion
+vim
+wget
+which
+traceroute
+unzip
+tcpdump
+telnet
+ntp
+nc
+lsof
+screen
+tmux
+iotop
+sysstat
+python-requests
+dmidecode
+net-tools
+
+-*firmware*
+-postfix
+-tuned
+-iwl*
+-NetworkManager*
+-centos-logos
+-alsa*
+-audit
+-ModemManager*
+-selinux*
+-wpa_supplicant
+
+%end

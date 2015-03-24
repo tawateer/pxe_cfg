@@ -1,0 +1,210 @@
+# Based on anaconda-ks.cfg
+# Revised by Ningning Li <liningning@nosa.com>
+# version=RHEL6
+
+
+# System bootloader configuration
+bootloader --location=mbr
+
+
+# Clear the Master Boot Record
+zerombr
+
+
+# Partition clearing information
+clearpart --all
+
+
+# Use text mode install
+text
+
+
+# Firewall configuration
+firewall --disabled
+
+
+# Installation logging level
+logging --level=info
+
+
+# Install OS instead of upgrade
+install
+
+
+# Network information
+#network --bootproto=static
+
+
+# System authorization information
+auth --useshadow --enablemd5
+
+
+# Root password
+#rootpw --iscrypted $1$rCzVp0$xhGR4YJBbiPb3lQMr.W6K/
+rootpw --plaintext nosa.com
+
+
+# SELinux configuration
+selinux --disabled
+
+
+# Do not configure the X Window System
+skipx
+
+
+# System timezone
+timezone Asia/Shanghai --utc
+
+
+# Continue to install if unsupported hardware
+unsupported_hardware
+
+
+# Temporary accounts through which to log on during installation
+sshpw --username=nosa nosa.com --plaintext
+
+
+#reboot after installation
+reboot
+
+
+# Configuring services
+services --disabled auditd,cups,smartd,nfslock,postfix,NetworkManager,avahi-daemon 
+services --enabled sshd,network,crond,irqbalance,ipmi,sendmail,lvm2-lvmetad
+
+
+# Packages
+# Do not install the @Base group
+%packages --nobase
+
+# System
+basesystem
+centos-release
+#centos-release-notes
+filesystem
+initscripts
+setup
+SysVinit
+
+# Lib & Module
+dhcp-common
+glibc
+libgcc
+libstdc++
+lockdev
+m2crypto
+pam_passwdqc
+pam_pkcs11
+readline
+
+# Tools
+authconfig
+bc
+bind-utils
+bzip2
+coreutils
+cpio
+crontabs
+dmidecode
+dmraid
+dstat
+e2fsprogs
+eject
+file
+ftp
+gpm
+grub
+hdparm
+info
+iproute
+iptables
+iputils
+links
+logrotate
+logwatch
+irqbalance
+lsof
+mailx
+make
+man
+mcelog
+mdadm
+minicom
+#mkinitrd
+mlocate
+nc
+ntp
+nscd
+openldap-clients
+openssh-clients
+openssh-server
+passwd
+patch
+patchutils
+pciutils
+procmail
+procps
+psacct
+rpm
+rsync
+screen
+sendmail
+shadow-utils
+smartmontools
+strace
+sudo
+symlinks
+sysstat
+tcpdump
+telnet
+compat-libtermcap
+traceroute
+unzip
+util-linux
+vim-common
+vim-enhanced
+vim-minimal
+vixie-cron
+wget
+which
+yum
+
+# extra
+ctags
+glib2
+glib2-devel
+libdbi
+libicu
+libnfnetlink
+lrzsz
+pkgconfig
+
+# Shell
+bash
+
+# unused packages
+-postfix
+-mysql-libs
+-ecryptfs-utils
+-cryptsetup-luks
+-dhclient
+-dhcpv6_client
+-ed
+-kudzu
+-libhugetlbfs
+-rootfiles
+-pm-utils
+-selinux-policy-targeted
+-setools
+-setserial
+-sysfsutils
+-system-config-network-tui
+-pam_pkcs11
+-*firmware*
+-b43-openfwwf
+
+# unused 32 bit distribution
+-*.i386
+-*.i686
+
+%end
