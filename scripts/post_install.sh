@@ -41,8 +41,10 @@ if [[ "$install_type" == "kvm_guest" ]]
 then
     wget -q -O- ${script_url}/config_kvm_guest.py |python
 
-    echo "wget -q -O- ${script_url}/post_config_kvm_guest.sh |bash &>>/tmp/.post_config_kvm_guest.log ;sed -i '/post_config_kvm_guest.sh/d' /etc/rc.d/rc.local" >> /etc/rc.d/rc.local
-    exit 0 
+    # 重启之后虚拟机没网络, 所以先下好脚本
+    wget -q ${script_url}/post_config_kvm_guest.sh -O post_config_kvm_guest.sh
+    echo "cd /tmp/install &&sh -x post_config_kvm_guest.sh &>>/tmp/.post_config_kvm_guest.log ;sed -i '/post_config_kvm_guest.sh/d' /etc/rc.d/rc.local" >> /etc/rc.d/rc.local
+    exit 0
 fi
 
 

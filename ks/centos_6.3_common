@@ -56,10 +56,6 @@ skipx
 timezone Asia/Shanghai --utc
 
 
-# Continue to install if unsupported hardware
-unsupported_hardware
-
-
 # Temporary accounts through which to log on during installation
 #sshpw --username=wandoujia nosa.com --plaintext
 
