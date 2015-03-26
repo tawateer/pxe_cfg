@@ -52,8 +52,10 @@ wget -q -O- ${script_url}/config_common.py |python
 
 if [[ "$install_type" == "kvm_host" ]]
 then
-    yum -y install qemu-kvm qemu-kvm-tools python-virtinst qemu-img libvirt bridge-utils guestfish
-    echo "wget -q -O- ${script_url}/post_config_kvm_host.sh |bash &>>/tmp/.post_config_kvm_host.log ;sed -i '/post_config_kvm_host.sh/d' /etc/rc.d/rc.local" >> /etc/rc.d/rc.local
+    # 如果此时用 yum 安装 kvm, 对于 Centos7 会有很奇怪的问题, 现象是机器启动卡住, /etc/rc.d/rc.local 不执行,
+    # 原因待解, 把 安装 kvm 命令放在 post_config_kvm_host.sh 就没问题. 
+    #yum -y install qemu-kvm qemu-kvm-tools python-virtinst qemu-img libvirt bridge-utils guestfish
+    echo "wget -q -O- ${script_url}/post_config_kvm_host.sh |bash &>>/tmp/.post_config_kvm_host.log ;sed -i '/post_config_kvm_host.sh/d' /etc/rc.d/rc.local" >>/etc/rc.d/rc.local
 
 elif [[ "$install_type" == "docker_host" ]]
 then
@@ -61,7 +63,7 @@ then
     lvcreate -Wy -n data     -l 49%VG docker
     lvcreate -Wy -n volumes  -l 50%VG docker
     mkfs.ext4 /dev/docker/volumes
-    echo '/dev/docker/volumes /volumes ext4 defaults 0 2' >> /etc/fstab
+    echo '/dev/docker/volumes /volumes ext4 defaults 0 2' >>/etc/fstab
 
     yum -y -q install docker
 
@@ -72,4 +74,32 @@ then
 MountFlags=
 EOF
 
+fi
+
+
+# 物理机装机之后执行自定义脚本, 虚拟机不在此
+if [[ "$install_type" != "kvm_guest" ]]
+then
+    echo '''#!/bin/bash
+sed -i '/post_custom.sh/d' /etc/rc.d/rc.local
+
+sn=$(dmidecode -s system-serial-number)
+if echo $sn |grep -i Specified
+then
+   if test -f /etc/sn
+   then
+       sn=$(cat /etc/sn)
+   else
+       echo "v-"$(/usr/bin/uuidgen) >/etc/sn
+       sn=$(cat /etc/sn)
+   fi
+fi
+
+# 获取装机之后的自定义脚本并执行
+curl http://wdstack.hy01.nosa.com/api/v1/postcustom/?sn=$sn >/root/post_custom
+chown 777 /root/post_custom
+/root/post_custom &>>/root/post_custom.log
+''' >/root/gen_post_custom.sh
+
+    echo "sh /root/gen_post_custom.sh &>>/root/gen_post_custom.log ;sed -i '/gen_post_custom.sh/d' /etc/rc.d/rc.local" >>/etc/rc.d/rc.local
 fi

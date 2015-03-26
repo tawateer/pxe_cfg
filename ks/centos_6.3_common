@@ -61,7 +61,7 @@ unsupported_hardware
 
 
 # Temporary accounts through which to log on during installation
-sshpw --username=nosa nosa.com --plaintext
+#sshpw --username=wandoujia nosa.com --plaintext
 
 
 #reboot after installation
