@@ -6,9 +6,25 @@ ext_device="em1"
 intra_device="em2"
 
 
-# 更改外网卡名称
-/bin/sed -i "s/eth1/${ext_device}/g" /etc/udev/rules.d/70-persistent-net.rules
-/bin/sed -i "s/eth0/${intra_device}/g" /etc/udev/rules.d/70-persistent-net.rules
+# 更改网卡名称
+if uname -r |grep ^2.6.32   # 如果是 Centos6
+then
+    /bin/sed -i "s/eth1/${ext_device}/g" /etc/udev/rules.d/70-persistent-net.rules
+    /bin/sed -i "s/eth0/${intra_device}/g" /etc/udev/rules.d/70-persistent-net.rules
+elif uname -r |grep ^3.10   # 如果是 Centos7
+then
+    sed -i "s/vconsole.keymap=us/vconsole.keymap=us net.ifnames=0/g" /etc/default/grub
+    grub2-mkconfig -o /boot/grub2/grub.cfg
+
+    mac_eth0=$(ip addr show eth0 |grep link/ether |awk '{print $2}')
+    mac_eth1=$(ip addr show eth1 |grep link/ether |awk '{print $2}')
+    echo "# PCI device 0x1af4:0x1000 (virtio-pci)
+SUBSYSTEM==\"net\", ACTION==\"add\", DRIVERS==\"?*\", ATTR{address}==\"${mac_eth0}\", ATTR{type}==\"1\", KERNEL==\"eth*\", NAME=\"${intra_device}\"
+
+# PCI device 0x1af4:0x1000 (virtio-pci)
+SUBSYSTEM==\"net\", ACTION==\"add\", DRIVERS==\"?*\", ATTR{address}==\"${mac_eth1}\", ATTR{type}==\"1\", KERNEL==\"eth*\", NAME=\"${ext_device}\"" >/etc/udev/rules.d/70-persistent-net.rules
+
+fi
 
 
 # Define data partition
@@ -66,21 +82,12 @@ yum -y install puppet ;chkconfig puppet on ;puppet agent -t --server puppetlb.co
 echo '''#!/bin/bash
 sed -i '/post_custom.sh/d' /etc/rc.d/rc.local
 
-sn=$(dmidecode -s system-serial-number)
-if echo $sn |grep -i Specified
-then
-   if test -f /etc/sn
-   then
-       sn=$(cat /etc/sn)
-   else
-       echo "v-"$(/usr/bin/uuidgen) >/etc/sn
-       sn=$(cat /etc/sn)
-   fi
-fi
+# 虚拟机使用主机名作为 key
+hostname=$(hostname)
 
 # 获取装机之后的自定义脚本并执行
-curl http://wdstack.hy01.nosa.com/api/v1/postcustom/?sn=$sn >/root/post_custom
-chown 777 /root/post_custom
+curl http://wdstack.hy01.nosa.com/api/v1/postcustom/?key=$hostname >/root/post_custom
+chmod 777 /root/post_custom
 /root/post_custom &>>/root/post_custom.log
 ''' >/root/gen_post_custom.sh
 

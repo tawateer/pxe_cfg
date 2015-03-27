@@ -85,21 +85,12 @@ then
     echo '''#!/bin/bash
 sed -i '/post_custom.sh/d' /etc/rc.d/rc.local
 
+# 物理机使用 sn 作为 key
 sn=$(dmidecode -s system-serial-number)
-if echo $sn |grep -i Specified
-then
-   if test -f /etc/sn
-   then
-       sn=$(cat /etc/sn)
-   else
-       echo "v-"$(/usr/bin/uuidgen) >/etc/sn
-       sn=$(cat /etc/sn)
-   fi
-fi
 
 # 获取装机之后的自定义脚本并执行
-curl http://wdstack.hy01.nosa.com/api/v1/postcustom/?sn=$sn >/root/post_custom
-chown 777 /root/post_custom
+curl http://wdstack.hy01.nosa.com/api/v1/postcustom/?key=$sn >/root/post_custom
+chmod 777 /root/post_custom
 /root/post_custom &>>/root/post_custom.log
 ''' >/root/gen_post_custom.sh
 
