@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+""" 配置内核, 适用于 Centos6 和 Centos 7.
+
+"""
+
 
 import subprocess
 
