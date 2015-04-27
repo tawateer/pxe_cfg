@@ -20,9 +20,9 @@ mkdir -p /tmp/install
 cd /tmp/install
 
 
-# 添加源(wandoulabs-release 是一个坑, 以后更新 wandoulabs-release 的话 此文件可能会被删除)
+# 添加源(nosa-release 是一个坑, 以后更新 nosa-release 的话 此文件可能会被删除)
 /bin/rm -f /etc/yum.repos.d/CentOS*
-rpm -Uvh http://mirrors.internal.nosa.com/wandoulabs/6/x86_64/wandoulabs-release-0.0.17-1.el6.x86_64.rpm
+rpm -Uvh http://mirrors.internal.nosa.com/nosa/6/x86_64/nosa-release-0.0.17-1.el6.x86_64.rpm
 
 
 # 安装 requests 模块, 请求资产和 DNS 系统会用到.
@@ -61,6 +61,7 @@ then
 
 elif [[ "$install_type" == "docker_host" ]]
 then
+    # Create Logical Volumes for Docker
     lvcreate -Zy -n metadata -l 1%VG  docker
     lvcreate -Wy -n data     -l 49%VG docker
     lvcreate -Wy -n volumes  -l 50%VG docker
@@ -69,12 +70,17 @@ then
 
     yum -y -q install docker
 
-    # Minor hack for Docker
-    mkdir /etc/systemd/system/docker.service.d/
-    cat >> /etc/systemd/system/docker.service.d/no-private-mount.conf << EOF
-[Service]
-MountFlags=
-EOF
+    # Disable SELinux feature and enforce insecure registry
+    # Disable Red Hat registry and Docker.io registry, enable private registry
+    sed -i /etc/sysconfig/docker \
+        -e '/OPTIONS=/ c\OPTIONS=' \
+        -e '/ADD_REGISTRY=/ c\ADD_REGISTRY=--add-registry dockerhub.internal' \
+        -e '/BLOCK_REGISTRY=/ c\BLOCK_REGISTRY=--block-registry docker.io' \
+        -e '/INSECURE_REGISTRY=/ c\INSECURE_REGISTRY=--insecure-registry dockerhub.internal'
+
+    # Use direct LVM instead of loop LVM
+    sed -i /etc/sysconfig/docker-storage \
+        -e '/DOCKER_STORAGE_OPTIONS=/ c\DOCKER_STORAGE_OPTIONS=--storage-opt dm.datadev=/dev/docker/data --storage-opt dm.metadatadev=/dev/docker/metadata'
 
 fi
 
