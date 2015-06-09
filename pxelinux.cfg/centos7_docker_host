@@ -1,0 +1,12 @@
+default centos7_docker_host
+prompt 1
+timeout 600
+display boot.msg
+
+label local
+localboot 0
+
+
+label centos7_docker_host
+ kernel centos7/vmlinuz
+ append netmask=255.255.255.0 ksdevice=em2 initrd=centos7/initrd.img nofb text ks=http://pxe.hy01.nosa.com/ks/centos7_docker_host.cfg

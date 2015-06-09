@@ -1,0 +1,12 @@
+default centos6_x64_raw_clean
+prompt 1
+timeout 600
+display boot.msg
+
+label local
+localboot 0
+
+
+label centos6_x64_raw_clean
+ kernel centos6_x64/vmlinuz
+ append netmask=255.255.255.0 ksdevice=em2 initrd=centos6_x64/initrd.img nofb text ks=http://pxe.hy01.nosa.com/ks/centos6_x64_raw_clean.cfg
