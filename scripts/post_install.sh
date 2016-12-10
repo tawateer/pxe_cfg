@@ -11,6 +11,10 @@ script_url="http://pxe.hy01.nosa.com/script"
 echo "search nosa.com" >>/etc/resolv.conf
 
 
+# 同步时间, 否则请求 Puppet ca 可能失败
+ntpdate ntp.nosa.me &>/dev/null ; /sbin/hwclock -w
+
+
 # Centos 7 需要加权限否则开机不执行 rc.local
 chmod +x /etc/rc.d/rc.local
 
