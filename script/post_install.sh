@@ -4,15 +4,15 @@ install_type=$1
 install_ver=$2
 
 
-script_url="http://pxe.hy01.nosa.com/script"
+script_url="http://pxe.internal.DOMAIN.COM/script"
 
 
 # 修复安装之后的 Puppet 问题
-echo "search nosa.com" >>/etc/resolv.conf
+echo "search DOMAIN.COM" >>/etc/resolv.conf
 
 
 # 同步时间, 否则请求 Puppet ca 可能失败
-ntpdate ntp.nosa.me &>/dev/null ; /sbin/hwclock -w
+ntpdate ntp.DOMAIN.COM &>/dev/null ; /sbin/hwclock -w
 
 
 # Centos 7 需要加权限否则开机不执行 rc.local
@@ -24,9 +24,9 @@ mkdir -p /tmp/install
 cd /tmp/install
 
 
-# 添加源(nosa-release 是一个坑, 以后更新 nosa-release 的话 此文件可能会被删除)
+# 添加源(wandoulabs-release 是一个坑, 以后更新 wandoulabs-release 的话 此文件可能会被删除)
 /bin/rm -f /etc/yum.repos.d/CentOS*
-rpm -Uvh http://mirrors.internal.nosa.com/nosa/6/x86_64/nosa-release-0.0.17-1.el6.x86_64.rpm
+rpm -Uvh http://mirrors.internal.DOMAIN.COM/wandoulabs/6/x86_64/wandoulabs-release-0.0.24-1.el6.x86_64.rpm
 
 
 # 安装 requests 模块, 请求资产和 DNS 系统会用到.
@@ -36,8 +36,6 @@ yum -y install python-requests
 # 根据资产系统拿到主机名和ip, 并下载dns相关脚本
 wget ${script_url}/assetapi.py
 wget ${script_url}/wdstackapi.py
-wget ${script_url}/dnsapi.py
-wget ${script_url}/wddns
 
 
 # 对 kvm_guest 执行初始化
@@ -66,43 +64,43 @@ then
 elif [[ "$install_type" == "docker_host" ]]
 then
     # Create Logical Volumes for Docker
-    lvcreate -Zy -n metadata -l 1%VG  docker
-    lvcreate -Wy -n data     -l 49%VG docker
-    lvcreate -Wy -n volumes  -l 50%VG docker
-    mkfs.ext4 /dev/docker/volumes
-    echo '/dev/docker/volumes /volumes ext4 defaults 0 2' >>/etc/fstab
+    lvcreate -y -n docker -l 100%VG docker
+    mkfs.btrfs /dev/docker/docker
+    echo '/dev/docker/docker /var/lib/docker btrfs defaults 0 2' >>/etc/fstab
 
-    yum -y -q install docker
+    yum -y install docker-engine
+    systemctl enable docker
 
-    # Disable SELinux feature and enforce insecure registry
-    # Disable Red Hat registry and Docker.io registry, enable private registry
-    sed -i /etc/sysconfig/docker \
-        -e '/OPTIONS=/ c\OPTIONS=' \
-        -e '/ADD_REGISTRY=/ c\ADD_REGISTRY=--add-registry dockerhub.internal' \
-        -e '/BLOCK_REGISTRY=/ c\BLOCK_REGISTRY=--block-registry docker.io' \
-        -e '/INSECURE_REGISTRY=/ c\INSECURE_REGISTRY=--insecure-registry dockerhub.internal'
+    ## Disable SELinux feature and enforce insecure registry
+    ## Disable Red Hat registry and Docker.io registry, enable private registry
+	echo "SELINUX=disabled
+SELINUXTYPE=targeted" > /etc/selinux/config
 
-    # Use direct LVM instead of loop LVM
-    sed -i /etc/sysconfig/docker-storage \
-        -e '/DOCKER_STORAGE_OPTIONS=/ c\DOCKER_STORAGE_OPTIONS=--storage-opt dm.datadev=/dev/docker/data --storage-opt dm.metadatadev=/dev/docker/metadata'
+   echo "ADD_REGISTRY='--add-registry hub.internal.DOMAIN.COM'
+BLOCK_REGISTRY=''
+OPTIONS='--selinux-enabled --log-driver=journald --insecure-registry hub.internal.DOMAIN.COM --debug=true -H unix:///var/run/docker.sock'" > /etc/sysconfig/docker
 
+   mkdir -p /etc/systemd/system/docker.service.d
+   echo '[Service]
+EnvironmentFile=-/etc/sysconfig/docker
+EnvironmentFile=-/etc/sysconfig/docker-storage
+EnvironmentFile=-/etc/sysconfig/docker-network
+ExecStart=
+ExecStart=/usr/bin/dockerd $OPTIONS \
+          $DOCKER_STORAGE_OPTIONS \
+          $DOCKER_NETWORK_OPTIONS \
+          $BLOCK_REGISTRY \
+          $INSECURE_REGISTRY' > /etc/systemd/system/docker.service.d/docker.conf
+
+    yum -y install td-agent
+    systemctl enable td-agent
+    td-agent-gem install --http-proxy http://sa-monitor-proxy-ct0.db01:8080 fluent-plugin-forest fluent-plugin-rewrite-tag-filter fluent-plugin-record-reformer
 fi
 
 
 # 物理机装机之后执行自定义脚本, 虚拟机不在此
 if [[ "$install_type" != "kvm_guest" ]]
 then
-    echo '''#!/bin/bash
-sed -i '/post_custom.sh/d' /etc/rc.d/rc.local
-
-# 物理机使用 sn 作为 key
-sn=$(dmidecode -s system-serial-number)
-
-# 获取装机之后的自定义脚本并执行
-curl http://wdstack.hy01.nosa.com/api/v1/postcustom/?key=$sn >/root/post_custom
-chmod 777 /root/post_custom
-/root/post_custom &>>/root/post_custom.log
-''' >/root/gen_post_custom.sh
-
-    echo "sh /root/gen_post_custom.sh &>>/root/gen_post_custom.log ;sed -i '/gen_post_custom.sh/d' /etc/rc.d/rc.local" >>/etc/rc.d/rc.local
+    wget "http://wdstack.internal.DOMAIN.COM/script/gen_user_data.sh" -O /root/gen_user_data.sh
+    echo "sh /root/gen_user_data.sh &>>/root/gen_user_data.log" >>/etc/rc.d/rc.local
 fi

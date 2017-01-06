@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-""" 配置内核, 适用于 Centos6 和 Centos 7.
-
-"""
-
 
 import subprocess
 
@@ -96,12 +92,21 @@ def main():
     for less in less_dict:
         print kernel_conf(less, less_dict[less], "less")
 
-    # 对net.ipv4.tcp_mem 特殊处理一下.
+    # 对 net.ipv4.tcp_mem 特殊处理.
     cmd = """sysctl net.ipv4.tcp_mem |awk -F "=" '{print $NF}' |\
             awk '{print $1" "$2" "$3}'""" 
     rc, so, se = shell(cmd)
     if so.strip() != "94500000 915000000 927000000":
         cmd="""sysctl -w net.ipv4.tcp_mem='94500000 915000000 927000000'"""
+        rc, so, se = shell(cmd)
+        print so
+
+    # 对 net.ipv4.ip_local_port_range 特殊处理.
+    cmd = """sysctl net.ipv4.ip_local_port_range |awk -F "=" '{print $NF}' |\
+            awk '{print $1}'"""
+    rc, so, se = shell(cmd)
+    if int(so.strip()) > 10000:
+        cmd="""sysctl -w net.ipv4.ip_local_port_range='10000	65535'"""
         rc, so, se = shell(cmd)
         print so
 

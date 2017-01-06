@@ -64,6 +64,9 @@ TYPE="Ethernet"
 BRIDGE=br2
 EOF
 
+# 对于 kvm_host, 把 route-em2 修改成 route-br2, 否则网关会有问题.
+/bin/mv -f /etc/sysconfig/network-scripts/route-em2 /etc/sysconfig/network-scripts/route-br2
+
 service network restart ||systemctl restart network.service
 service libvirtd restart ||systemctl restart libvirtd.service
 

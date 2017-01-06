@@ -72,26 +72,13 @@ mount -a || exit 1
 sed -i "/vmlinuz-2.6.32-279.el6.x86_64/s/$/ clocksource_failover=acpi_pm/g" /boot/grub/grub.conf
 
 
-# 重启之后增加DNS, 执行Puppet 
-echo "cd /tmp/install &&python wddns -a &&sed -i '/wddns/d' /etc/rc.d/rc.local 
-
-yum -y install puppet ;chkconfig puppet on ;puppet agent -t --server puppetlb.corp.nosa.com --ca_server puppetca.corp.nosa.com ;sed -i '/puppet/d' /etc/rc.d/rc.local ;/bin/rm -rf /tmp/install/* " >> /etc/rc.d/rc.local
+# 重启之后 执行Puppet 
+yum -y install puppet ;/usr/bin/puppet agent --onetime --no-daemonize --server=puppetlb.corp.DOMAIN.COM --ca_server=puppetca.corp.DOMAIN.COM --debug ;sed -i '/puppet/d' /etc/rc.d/rc.local ;/bin/rm -rf /tmp/install/* " >> /etc/rc.d/rc.local
 
 
 # 装机之后执行自定义脚本
-echo '''#!/bin/bash
-sed -i '/post_custom.sh/d' /etc/rc.d/rc.local
-
-# 虚拟机使用主机名作为 key
-hostname=$(hostname)
-
-# 获取装机之后的自定义脚本并执行
-curl http://wdstack.hy01.nosa.com/api/v1/postcustom/?key=$hostname >/root/post_custom
-chmod 777 /root/post_custom
-/root/post_custom &>>/root/post_custom.log
-''' >/root/gen_post_custom.sh
-
-echo "sh /root/gen_post_custom.sh &>>/root/gen_post_custom.log ;sed -i '/gen_post_custom.sh/d' /etc/rc.d/rc.local" >>/etc/rc.d/rc.local
+wget "http://wdstack.internal.DOMAIN.COM/script/gen_user_data.sh" -O /root/gen_user_data.sh
+echo "sh /root/gen_user_data.sh &>>/root/gen_user_data.log" >>/etc/rc.d/rc.local
 
 
 # 操作完成之后重启使网卡生效
